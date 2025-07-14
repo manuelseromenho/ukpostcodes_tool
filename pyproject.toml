@@ -1,5 +1,5 @@
 [project]
-name = "ukpostcodes-tool"
+name = "ukpostcodes_tool"
 version = "0.1.0"
 description = "UK post codes tool to validate and format"
 authors = [{ name = "Manuel Seromenho" }]
@@ -13,9 +13,6 @@ dev = [
     "mypy",
     "ruff"
 ]
-
-[project.scripts]
-ukpostcodes-tool = ""
 
 [build-system]
 requires = ["setuptools"]
