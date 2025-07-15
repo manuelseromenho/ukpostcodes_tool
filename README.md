@@ -11,7 +11,7 @@ A lightweight Python library to validate and normalize **UK postcodes**, followi
 
 ## Installation
 
-Clone the repo and install in editable mode (with optional dev dependencies):
+Clone the repo and install with:
 
 ```bash
 pip install .
@@ -56,29 +56,6 @@ Applies postcode district-specific rules not enforceable by regex:
 - Central London single-digit districts that require an additional letter subdivision
   (e.g., EC1–EC4, SW1, W1, WC1, WC2, E1W, N1C, N1P, NW1W, SE1P) must include this subdivision letter.
 
-
-## Project Structure
-
-```
-.
-├── pyproject.toml
-├── README.md
-├── src/
-│   └── ukpostcodes_tool/
-│       ├── __init__.py
-│       └── core.py
-```
-
-## Development
-
-Run tests and format checks with:
-
-```bash
-pytest
-black .
-ruff check .
-mypy src/
-```
 
 ## License
 

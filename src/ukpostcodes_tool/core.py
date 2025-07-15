@@ -1,4 +1,7 @@
+import logging
 import re
+
+from ukpostcodes_tool.logging_setup import setup_logger
 
 # abcdefghijklmnopqrstuvwxyz
 
@@ -179,6 +182,7 @@ class Postcode:
         self._area = None
         self._digits = None
 
+
     def is_valid(self):
         return self.validate(self._raw_postcode)
 
@@ -248,6 +252,8 @@ class Postcode:
         try:
             instance = cls(raw_postcode)
         except ValueError:
+            logger = setup_logger()
+            logger.error("Invalid Postcode, needs at least 4 chars")
             return False
         if not bool(UK_POSTCODE_REGEX.match(instance._normalized)):
             return False
