@@ -23,14 +23,14 @@ pip install .
 from ukpostcodes_tool.core import Postcode
 
 postcode = Postcode("EC1A1BB")
-print(postcode.get_normalized())  # 'EC1A 1BB'
-print(postcode.is_valid())        # True or False
+print(postcode.get_normalized()) 
+print(postcode.is_valid())
 
 # or it's possible to access directly
 
-print(Postcode.normalize("EC1A1BB"))    # 'EC1A 1BB'
-print(Postcode.validate("EC1A 1BB"))    # True
-print(Postcode.validate("INVALID"))     # False
+print(Postcode.normalize("EC1A1BB"))
+print(Postcode.validate("EC1A 1BB"))
+print(Postcode.validate("INVALID"))
 ```
 
 ## Validation Logic
