@@ -1,133 +1,12 @@
-import re
-
-from ukpostcodes_tool.logging_setup import setup_logger
-
-UK_POSTCODE_REGEX = re.compile(
-    r"""
-    ^(
-        (GIR\s0AA)|XM4\s5HQ|SAN\sTA1|                           # Special cases
-        (
-            (
-                ([A-PR-UWYZ][0-9][0-9]?) |                      # A9 or A99
-                ([A-PR-UWYZ][A-HK-Y][0-9][0-9]?) |              # AA9 or AA99
-                ([A-PR-UWYZ][0-9][A-HJKPSTUW]) |                # A9A
-                ([A-PR-UWYZ][A-HK-Y][0-9][ABEHMNPRVWXY])        # AA9A
-            )
-            \s                                                  # one and only one space
-            [0-9][ABD-HJLNP-UW-Z]{2}                            # Inward code
-        )
-    )$
-    """,
-    re.VERBOSE | re.IGNORECASE,
+from ukpostcodes_tool.constants import (
+    CENTRAL_LONDON_DISTRICTS_REQUIRING_SUBDIVISION,
+    DOUBLE_DIGIT_DISTRICTS,
+    NON_GEOGRAPHIC_DISTRICTS,
+    SINGLE_DIGIT_DISTRICTS,
+    UK_POSTCODE_REGEX,
+    ZERO_ONLY_ALLOWED_DISTRICTS,
 )
-
-SINGLE_DIGIT_DISTRICTS = {
-    "BL",
-    "BR",
-    "FY",
-    "HA",
-    "HD",
-    "HG",
-    "HR",
-    "HS",
-    "HX",
-    "JE",
-    "LD",
-    "SM",
-    "SR",
-    "WC",
-    "WN",
-    "ZE",
-}
-
-DOUBLE_DIGIT_DISTRICTS = {"AB", "LL", "SO"}
-
-ZERO_ONLY_ALLOWED_DISTRICTS = {"BL", "BS", "CM", "CR", "FY", "HA", "PR", "SL", "SS"}
-
-CENTRAL_LONDON_DISTRICTS_REQUIRING_SUBDIVISION = {
-    "EC1",
-    "EC2",
-    "EC3",
-    "EC4",
-    "SW1",
-    "W1",
-    "WC1",
-    "WC2",
-    "E1W",
-    "N1C",
-    "N1P",
-    "NW1W",
-    "SE1P",
-}
-
-NON_GEOGRAPHIC_DISTRICTS = {
-    "AB": {"99"},
-    "B": {"99"},
-    "BA": {"9"},
-    "BB": {"0", "94"},
-    "BL": ["11", "78"],
-    "BD": {"97", "98", "99"},
-    "BN": {"50", "51", "52", "88", "91", "95", "99"},
-    "BS": {"0", "98", "99"},
-    "BT": {"58"},
-    "CA": {"95", "99"},
-    "CF": {"30", "91", "95", "99"},
-    "CH": {str(i) for i in range(25, 35)}.union({"88", "99"}),
-    "CM": {"92", "98", "99"},
-    "CR": {"9", "44", "90"},
-    "CT": {"50"},
-    "CW": {"98"},
-    "DE": {"1", "45"},
-    "DH": {"97", "98", "99"},
-    "DL": {"98"},
-    "DN": {"55"},
-    "E": {"77", "98"},
-    "EC": {"1P", "2P", "3P", "4P", "50"},
-    "EH": {"77", "91", "95", "99"},
-    "G": {"9", "58", "70", "79", "90"},
-    "GL": {"11"},
-    "GU": {"95"},
-    "HP": {"22"},
-    "IP": {"98"},
-    "IV": {"99"},
-    "KY": {"99"},
-    "L": {"67", "69", "70", "71", "72", "73", "74", "75", "80"},
-    "LE": {"21", "41", "55", "87", "94", "95"},
-    "LS": {"88", "98", "99"},
-    "M": {"60", "61", "99"},
-    "ME": {"99"},
-    "MK": {"77"},
-    "N": {"1P", "81"},
-    "NE": {"82", "83", "85", "88", "92", "98", "99"},
-    "NG": {"70", "80", "90"},
-    "NN": {"99"},
-    "NR": {"18", "19", "26", "99"},
-    "NW": {"1W", "26"},
-    "OL": {"16", "95"},
-    "PE": {"99"},
-    "PL": {"95"},
-    "PO": {"24"},
-    "PR": {"0", "11"},
-    "RH": {"77"},
-    "S": {"49", "94", "95", "96", "97", "98", "99"},
-    "SA": {"48", "72", "80", "99"},
-    "SE": {"1P"},
-    "SR": {"9", "43"},
-    "SS": {"1"},
-    "SY": {"99"},
-    "TN": {"2"},
-    "TQ": {"9"},
-    "UB": {"3", "5", "8", "18"},
-    "W": {"1A"},
-    "WA": {"55", "88"},
-    "WD": {"99"},
-    "WF": {"90"},
-    "WR": {"11", "78", "99"},
-    "WV": {"1", "98", "99"},
-    "YO": {"90"},
-    "JE": {"1", "4", "5"},
-    "IM": {"86", "87", "99"},
-}
+from ukpostcodes_tool.logging_setup import setup_logger
 
 
 class Postcode:
@@ -176,8 +55,8 @@ class Postcode:
         self._raw_postcode = raw_postcode
         self._normalized = self.normalize(raw_postcode)
         self._outward, self._inward = self._normalized.split()
-        self._area = ""
-        self._digits = ""
+        self._area = "".join([c for c in self._outward if c.isalpha()])
+        self._digits = "".join([c for c in self._outward if c.isdigit()])
 
     def is_valid(self):
         return self.validate(self._raw_postcode)
@@ -185,13 +64,19 @@ class Postcode:
     def get_normalized(self):
         return self._normalized
 
-    def _is_valid_central_london_specific_rules(self) -> bool:
+    def _is_valid_central_london_subdistrict(self) -> bool:
+        for prefix in CENTRAL_LONDON_DISTRICTS_REQUIRING_SUBDIVISION:
+            if self._outward.startswith(prefix) and len(self._outward) >= len(prefix):
+                return True
+
         return any(
             self._outward.startswith(prefix) and len(self._outward) >= len(prefix)
             for prefix in CENTRAL_LONDON_DISTRICTS_REQUIRING_SUBDIVISION
         )
 
-    def _is_valid_non_geographic_rules(self):
+    def _is_non_geographic_and_valid(self):
+        if self._area == "BF":
+            return True
         if self._area == "BX":
             # Must be in the format BXd, where d is 1-9
             return (
@@ -201,48 +86,50 @@ class Postcode:
             )
         if self._area == "XX":
             # Must be in the format XXd or XXdd
-            return self._digits.isdigit() and 1 <= len(self._digits) <= 2
-        if (
-            self._area in NON_GEOGRAPHIC_DISTRICTS
-            and self._digits in NON_GEOGRAPHIC_DISTRICTS[self._area]
-        ):
-            return True
-        return False
+            return (
+                self._digits.isdigit()
+                and 1 <= len(self._digits) <= 2
+                and self._digits != "0"
+            )
+
+        return self._outward in NON_GEOGRAPHIC_DISTRICTS
 
     def _is_valid_single_digit_district(self) -> bool:
-        if self._area in SINGLE_DIGIT_DISTRICTS and self._digits is not None:
-            return len(self._digits) == 1
-        return False
+        return len(self._digits) == 1
 
     def _is_valid_double_digit_district(self) -> bool:
-        if self._area in DOUBLE_DIGIT_DISTRICTS and self._digits is not None:
-            return len(self._digits) == 2
-        return False
+        return len(self._digits) == 2
 
     def _is_valid_zero_rule(self) -> bool:
-        if self._area in ZERO_ONLY_ALLOWED_DISTRICTS:
-            if self._digits == 0:
-                return True
-        return False
+        return self._area in ZERO_ONLY_ALLOWED_DISTRICTS
 
     def _does_it_pass_additional_rules(self) -> bool:
-        if self._is_valid_central_london_specific_rules():
+        if self._digits == "0" and not self._is_valid_zero_rule():
+            return False
+
+        if self._is_valid_central_london_subdistrict():
             return True
 
-        self._area = "".join([c for c in self._outward if c.isalpha()])
-        self._digits = "".join([c for c in self._outward if c.isdigit()])
+        if self._outward in NON_GEOGRAPHIC_DISTRICTS or self._area in {
+            "BF",
+            "BX",
+            "XX",
+        }:
+            return self._is_non_geographic_and_valid()
 
-        rules = [
-            self._is_valid_non_geographic_rules(),
-            self._is_valid_single_digit_district(),
-            self._is_valid_double_digit_district(),
-            self._is_valid_zero_rule(),
-        ]
+        if (
+            self._area in SINGLE_DIGIT_DISTRICTS
+            and not self._is_valid_single_digit_district()
+        ):
+            return False
 
-        if any(rule is True for rule in rules) or all(rule is False for rule in rules):
-            return True
+        if (
+            self._area in DOUBLE_DIGIT_DISTRICTS
+            and not self._is_valid_double_digit_district()
+        ):
+            return False
 
-        return False
+        return True
 
     @classmethod
     def validate(cls, raw_postcode: str) -> bool:
