@@ -1,9 +1,6 @@
-import logging
 import re
 
 from ukpostcodes_tool.logging_setup import setup_logger
-
-# abcdefghijklmnopqrstuvwxyz
 
 UK_POSTCODE_REGEX = re.compile(
     r"""
@@ -171,7 +168,7 @@ class Postcode:
         raw_postcode (str): The postcode string to validate (may be unformatted).
 
     Attributes:
-        _normalized (str): The postcode formatted with uppercase letters and a single space before the last three characters.
+        get_normalized (str): The postcode formatted with uppercase letters and a single space before the last three characters.
         is_valid (bool): True if the postcode passes both regex and additional district-specific validations; False otherwise.
     """
 
@@ -179,9 +176,8 @@ class Postcode:
         self._raw_postcode = raw_postcode
         self._normalized = self.normalize(raw_postcode)
         self._outward, self._inward = self._normalized.split()
-        self._area = None
-        self._digits = None
-
+        self._area = ""
+        self._digits = ""
 
     def is_valid(self):
         return self.validate(self._raw_postcode)
@@ -211,19 +207,23 @@ class Postcode:
             and self._digits in NON_GEOGRAPHIC_DISTRICTS[self._area]
         ):
             return True
+        return False
 
     def _is_valid_single_digit_district(self) -> bool:
-        if self._area in SINGLE_DIGIT_DISTRICTS:
+        if self._area in SINGLE_DIGIT_DISTRICTS and self._digits is not None:
             return len(self._digits) == 1
+        return False
 
     def _is_valid_double_digit_district(self) -> bool:
-        if self._area in DOUBLE_DIGIT_DISTRICTS:
+        if self._area in DOUBLE_DIGIT_DISTRICTS and self._digits is not None:
             return len(self._digits) == 2
+        return False
 
     def _is_valid_zero_rule(self) -> bool:
         if self._area in ZERO_ONLY_ALLOWED_DISTRICTS:
             if self._digits == 0:
                 return True
+        return False
 
     def _does_it_pass_additional_rules(self) -> bool:
         if self._is_valid_central_london_specific_rules():
@@ -239,7 +239,7 @@ class Postcode:
             self._is_valid_zero_rule(),
         ]
 
-        if any(rule is True for rule in rules) or all(rule is None for rule in rules):
+        if any(rule is True for rule in rules) or all(rule is False for rule in rules):
             return True
 
         return False
